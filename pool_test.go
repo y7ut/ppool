@@ -69,19 +69,19 @@ func TestPool_Start(t *testing.T) {
 		assertExist(t, defaultPool.stopChannel, "stop channel must init after start")
 		assertExist(t, defaultPool.waitBuffer, "buffer channel must init after start")
 	})
-	work := &SimpleWork{name: "worker", TrueSpendTime: 4}
+	work := &SimpleWork{name: "worker", TrueSpendTime: 3}
 	t.Run("wait buffer read test", func(t *testing.T) {
 		defaultPool.waitBuffer <- &work
-		time.Sleep((work.TrueSpendTime + 1) * time.Second)
-		assertEqual(t, work.finished, true, "work must be serve in wait buffer, and finish")
+		time.Sleep(4 * time.Second)
+		assertEqual(t, work.finished, true, "after 4s, work must be served and finish")
 		assertEqual(t, len(defaultPool.readyToWork), 1, "pool must have work in readyToWork list")
 	})
 
 	//
-	t.Run("clean work test", func(t *testing.T) {
+	t.Run("clean work test will on 5, 10, 15, 20...", func(t *testing.T) {
 		// clean event need dispatch twice , this time worker has been clean
-		time.Sleep(defaultPool.maxIdleWorkerDuration)
-		assertEqual(t, len(defaultPool.readyToWork), 0, "readyToWork must clean after maxIdleWorkerDuration")
+		time.Sleep(7 * time.Second)
+		assertEqual(t, len(defaultPool.readyToWork), 0, "after 11s, clean event dispatch twice, readyToWork must empty.")
 		assertEqual(t, defaultPool.WorkerCount, 0, "current worker count must be 0")
 	})
 
@@ -91,7 +91,7 @@ func TestPool_Start(t *testing.T) {
 		defaultPool.stop = true
 		work := generateSimpleWork("work_to_test_start", 0)
 		err := defaultPool.Do(work)
-		assertEqual(t, err, fmt.Errorf("WP is Close"), "stop pool still send work to do must return error")
+		assertEqual(t, err, fmt.Errorf("WP is Close"), "stoped pool can not do work")
 	})
 }
 
@@ -408,7 +408,7 @@ func TestCreatePool_MaxWorkerLimit(t *testing.T) {
 	)
 	workers := make([]*SimpleWork, 0)
 	for i := 0; i < 5; i++ {
-		workers = append(workers, generateSimpleWork(fmt.Sprintf("worker-mwl-%d", i), 3))
+		workers = append(workers, generateSimpleWork(fmt.Sprintf("worker-mwl-%d", i), 1))
 		ok, err := pool.Serve(workers[i])
 		if err != nil {
 			t.Fatalf("Error serving worker-mwl-%d: %v", i, err)

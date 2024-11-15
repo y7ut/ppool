@@ -119,9 +119,6 @@ func (wp *Pool[T]) start() {
 					return
 				case <-ticker.C:
 					wp.clean(&scrath)
-					if len(scrath) > 0 {
-						wp.logger.Printf("clean %d worker, last used time is %s\n", len(scrath), scrath[len(scrath)-1].lastUseTime.Format("2006-01-02 15:04:05"))
-					}
 				}
 			}
 		}()
@@ -327,6 +324,9 @@ func (wp *Pool[T]) clean(scratch *[]*workerChan[T]) {
 
 	// 最后别忘了 解散那个worker channel!!!
 	tmp := *scratch
+	if len(tmp) > 0 {
+		wp.logger.Printf("clean %d worker, last used time is %s\n", len(tmp), tmp[len(tmp)-1].lastUseTime.Format("2006-01-02 15:04:05"))
+	}
 	for i := range tmp {
 		// 收到nil会退出
 		close(tmp[i].ch)
