@@ -329,7 +329,7 @@ func (wp *Pool[T]) clean(scratch *[]*workerChan[T]) {
 	}
 	for i := range tmp {
 		// 收到nil会退出
-		close(tmp[i].ch)
+		tmp[i].ch <- nil
 		tmp[i] = nil
 	}
 }

@@ -335,6 +335,34 @@ func TestPool_Clean(t *testing.T) {
 	defer defaultPool.Stop()
 }
 
+func TestPool_CleanAndUseAgain(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatal(r)
+		}
+	}()
+	defaultPool := &Pool[*SimpleWork]{
+		maxWorkerCount:        2,
+		maxIdleWorkerDuration: 1 * time.Second,
+		timeout:               10 * time.Second,
+		logger:                nullLogger,
+		workChanPool: sync.Pool{
+			New: func() interface{} {
+				return &workerChan[*SimpleWork]{
+					ch: make(chan **SimpleWork, workerChanCap),
+				}
+			},
+		},
+	}
+	defaultPool.start()
+	defaultPool.Do(&SimpleWork{name: "worker", TrueSpendTime: 3})
+	defaultPool.Do(&SimpleWork{name: "worker", TrueSpendTime: 3})
+	time.Sleep(6 * time.Second)
+	defaultPool.Do(&SimpleWork{name: "worker", TrueSpendTime: 3})
+	defaultPool.Do(&SimpleWork{name: "worker", TrueSpendTime: 3})
+	defaultPool.Stop()
+}
+
 // 测试默认的 `CreatePool` 配置
 func TestCreatePool_DefaultConfig(t *testing.T) {
 	pool, _ := CreatePool[*SimpleWork]()
